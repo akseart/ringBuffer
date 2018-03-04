@@ -12,7 +12,7 @@ private:
     int lengthRingBuffer;
     int *ringBuffer;
     int *ptrHead, *ptrEnd;
-    int numberItem;
+    bool change = 0;
 public:
     RingBuffer(int lengthRingBuffer);
     bool pushItem(int);
@@ -24,29 +24,35 @@ RingBuffer::RingBuffer(int length){
     ringBuffer = new int [lengthRingBuffer];
     ptrEnd = ringBuffer;
     ptrHead = ringBuffer;
-    numberItem = 0;
 };
 bool RingBuffer::pushItem(int item){
-    if (numberItem == lengthRingBuffer)
+    if (change && (ptrEnd == ptrHead))
     {
         return 1;
     };
-    ptrEnd++;
-    *(ptrEnd-1) = item;
-    numberItem++;
+    *ptrEnd = item;
+    long newIndexEnd = (ptrEnd - ringBuffer + 1 );
+    if (newIndexEnd >= lengthRingBuffer )
+        change = 1;
+    ptrEnd = ringBuffer + (newIndexEnd % lengthRingBuffer);
     return 0;
 }
 int RingBuffer::popItem(){
-    if (numberItem == 0)
+    if (!change && (ptrEnd == ptrHead))
         return INT_MIN;
     int item = *ptrHead;
-    ptrHead++;
-    numberItem--;
+    long newIndexBegin = ptrHead - ringBuffer +1 ;
+    if (newIndexBegin >= lengthRingBuffer)
+        change = 0;
+    ptrHead = ringBuffer + (newIndexBegin % lengthRingBuffer);
     return item;
 }
 void RingBuffer::print(){
-    for (int i=0; i<numberItem;i++){
-        printf("%d ",*(ptrHead+i));
+    long numberItems = change? lengthRingBuffer - (ptrHead-ptrEnd):ptrEnd-ptrHead;
+    if (numberItems == 0)
+        printf("Буфер пуст");
+    for (int i=0; i<numberItems; i++){
+        printf("%d ",*(ringBuffer + (((ptrHead - ringBuffer) + i)%lengthRingBuffer)));
     }
 }
 
@@ -60,7 +66,7 @@ int main(int argc, const char * argv[]) {
     do {
         printf("1. Добавить элемент в буфер\n");
         printf("2. Взять элемент из буфера\n");
-        printf("3. Выход\n");
+        printf("0. Выход\n");
         printf("Выберите команду: ");
         scanf("%i",&commandSelection);
         printf("\n");
@@ -77,13 +83,16 @@ int main(int argc, const char * argv[]) {
             case 2:{
                 int item = ring.popItem();
                 if (item == INT_MIN)
-                    printf("Буфер пуст");
+                    printf("Буфер пуст. Команда не выполнена \n");
                 else
                     printf("Взятый элемент: %d \n",item);
+                break;
             }
             default:
+                printf("Выберите верную команду!:");
                 break;
         }
+        printf("Буфер: ");
         ring.print();
         printf("\n");
     } while (commandSelection != 0);
